@@ -24,7 +24,7 @@ pipeline {
           steps {
             container('maven') {
               catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                sh 'mvn org.owasp:dependency-check-maven:10.0.4:check'
+                sh 'mvn org.owasp:dependency-check-maven:9.2.0:check'
               }
             }
           }
