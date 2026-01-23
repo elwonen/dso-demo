@@ -40,20 +40,32 @@ pipeline {
             container('licensefinder') {
               sh 'ls -al'
               sh '''#!/bin/bash --login
-                      /bin/bash --login
-                      rvm use default
-                      gem install license_finder
-                      license_finder
-                    '''
-	          }
-	        }
-	      }
+                    /bin/bash --login
+                    rvm use default
+                    gem install license_finder
+                    license_finder
+                  '''
+            }
+          }
+        }
         stage('Unit Tests') {
           steps {
             container('maven') {
               sh 'mvn test'
             }
           }
+        }
+      }
+    }
+    stage('SAST') {
+      steps {
+        container('slscan') {
+          sh 'scan --type java,depscan --build'
+        }
+      }
+      post {
+        success {
+          archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/*', fingerprint: true, onlyIfSuccessful: true
         }
       }
     }
