@@ -24,7 +24,7 @@ pipeline {
           steps {
             container('maven') {
               catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                sh 'mvn org.owasp:dependency-check-maven:9.2.0:check'
+                sh 'mvn org.owasp:dependency-check-maven:12.1.0:check -DnvdApiKey=d1654259-85ff-45f1-a53c-3b212b809c5a'
               }
             }
           }
