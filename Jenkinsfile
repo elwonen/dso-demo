@@ -24,7 +24,7 @@ pipeline {
           steps {
             container('maven') {
               catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                sh 'mvn org.owasp:dependency-check-maven:check'
+                sh 'mvn org.owasp:dependency-check-maven:12.1.0:check -DnvdApiKey=d1654259-85ff-45f1-a53c-3b212b809c5a'
               }
             }
           }
@@ -40,20 +40,32 @@ pipeline {
             container('licensefinder') {
               sh 'ls -al'
               sh '''#!/bin/bash --login
-                      /bin/bash --login
-                      rvm use default
-                      gem install license_finder
-                      license_finder
-                    '''
-	    }
-	  }
-	}
+                    /bin/bash --login
+                    rvm use default
+                    gem install license_finder
+                    license_finder
+                  '''
+            }
+          }
+        }
         stage('Unit Tests') {
           steps {
             container('maven') {
               sh 'mvn test'
             }
           }
+        }
+      }
+    }
+    stage('SAST') {
+      steps {
+        container('slscan') {
+          sh 'scan --type java,depscan --build'
+        }
+      }
+      post {
+        success {
+          archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/*', fingerprint: true, onlyIfSuccessful: true
         }
       }
     }
@@ -70,6 +82,24 @@ pipeline {
           steps {
             container('kaniko') {
               sh '/kaniko/executor -f `pwd`/Dockerfile -c `pwd` --insecure --skip-tls-verify --cache=true --destination=docker.io/elwonen/dso-demo'
+            }
+          }
+        }
+      }
+    }
+    stage('Image Analysis') {
+      parallel {
+        stage('Image Linting') {
+          steps {
+            container('docker-tools') {
+              sh 'dockle docker.io/elwonen/dso-demo'
+            }
+          }
+        }
+        stage('Image Scan') {
+          steps {
+            container('docker-tools') {
+              sh 'trivy image --timeout 10m --exit-code 1 elwonen/dso-demo'
             }
           }
         }
