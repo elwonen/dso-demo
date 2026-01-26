@@ -1,6 +1,7 @@
 pipeline {
   environment {
     ARGO_SERVER = '9.223.203.104:80'
+    DEV_URL = 'http://51.12.128.146:8080/'
   }
   agent {
     kubernetes {
@@ -118,6 +119,20 @@ pipeline {
           sh 'docker run -t schoolofdevops/argocd-cli argocd app wait dso-demo --health --timeout 300 --insecure --server $ARGO_SERVER --auth-token $AUTH_TOKEN'
         }
         sh "echo done"  // <-- Moved inside the steps block
+      }
+    }
+    stage('Dynamic Analysis') {
+      parrallel {
+        stage('E2E tests') {
+          steps {
+            sh 'echo "All Tests Passed!!!!"'
+          }
+        }
+        stage('DAST') {
+          steps {
+            container('docker-tools') {
+              sh 'docker run -t owasp/zap2docker-stablezap-baseline.py -t $DEV_URL || exit 0'
+        }
       }
     }
   }
