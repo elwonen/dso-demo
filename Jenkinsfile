@@ -1,6 +1,6 @@
 pipeline {
   environment {
-    ARGO_SERVER = '9.223.203.104:80'
+    ARGO_SERVER = 'argocd-server.argocd.svc.cluster.local:80'
     DEV_URL = 'http://51.12.128.146:8080/'
   }
   agent {
