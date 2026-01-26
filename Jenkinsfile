@@ -103,7 +103,7 @@ pipeline {
         stage('Image Scan') {
           steps {
             container('docker-tools') {
-              sh 'trivy image --timeout 220m --exit-code 1 elwonen/dso-demo'
+              sh 'trivy image --timeout 20m --exit-code 1 elwonen/dso-demo'
             }
           }
         }
@@ -118,11 +118,11 @@ pipeline {
           sh 'docker run -t schoolofdevops/argocd-cli argocd app sync dso-demo --insecure --server $ARGO_SERVER --auth-token $AUTH_TOKEN'
           sh 'docker run -t schoolofdevops/argocd-cli argocd app wait dso-demo --health --timeout 300 --insecure --server $ARGO_SERVER --auth-token $AUTH_TOKEN'
         }
-        sh "echo done"  // <-- Moved inside the steps blocks
+        sh "echo done"
       }
     }
     stage('Dynamic Analysis') {
-      parrallel {
+      parallel {  // <-- Fixed typo: was 'parrallel'
         stage('E2E tests') {
           steps {
             sh 'echo "All Tests Passed!!!!"'
@@ -131,9 +131,12 @@ pipeline {
         stage('DAST') {
           steps {
             container('docker-tools') {
-              sh 'docker run -t owasp/zap2docker-stablezap-baseline.py -t $DEV_URL || exit 0'
-        }
-      }
-    }
-  }
-}
+              sh 'docker run -t owasp/zap2docker-stable zap-baseline.py -t $DEV_URL || exit 0'
+              //                                      ^ Added space here
+            }
+          }  // <-- Added missing closing brace
+        }  // <-- Added missing closing brace
+      }  // <-- Added missing closing brace for parallel
+    }  // <-- Added missing closing brace for stage
+  }  // <-- Closing stages
+}  // <-- Closing pipeline
