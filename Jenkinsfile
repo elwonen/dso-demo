@@ -1,6 +1,6 @@
 pipeline {
   environment {
-    ARGO_SERVER = '9.223.203.104'
+    ARGO_SERVER = 'argocd-server.argocd.svc.cluster.local:80'  // Fixed: added internal DNS
     DEV_URL = 'http://51.12.128.146:8080/'
   }
   agent {
@@ -35,7 +35,6 @@ pipeline {
           post {
             always {
               archiveArtifacts allowEmptyArchive: true, artifacts: 'target/dependency-check-report.html', fingerprint: true, onlyIfSuccessful: true
-              // dependencyCheckPublisher pattern: 'report.xml'
             }
           }
         }
@@ -114,15 +113,18 @@ pipeline {
         AUTH_TOKEN = credentials('argocd-jenkins-deployer-token') 
       }
       steps {
-        container('docker-tools') {
-          sh 'docker run -t schoolofdevops/argocd-cli argocd app sync dso-demo --insecure --server $ARGO_SERVER --auth-token $AUTH_TOKEN'
-          sh 'docker run -t schoolofdevops/argocd-cli argocd app wait dso-demo --health --timeout 300 --insecure --server $ARGO_SERVER --auth-token $AUTH_TOKEN'
+        container('argocd') {
+          sh '''
+            argocd version --client
+            argocd app sync dso-demo --insecure --server $ARGO_SERVER --auth-token $AUTH_TOKEN
+            argocd app wait dso-demo --health --timeout 300 --insecure --server $ARGO_SERVER --auth-token $AUTH_TOKEN
+            echo "Deployment complete!"
+          '''
         }
-        sh "echo done"
       }
     }
     stage('Dynamic Analysis') {
-      parallel {  // <-- Fixed typo: was 'parrallel'
+      parallel {
         stage('E2E tests') {
           steps {
             sh 'echo "All Tests Passed!!!!"'
@@ -130,13 +132,12 @@ pipeline {
         }
         stage('DAST') {
           steps {
-            container('docker-tools') {
-              sh 'docker run -t owasp/zap2docker-stable zap-baseline.py -t $DEV_URL || exit 0'
-              //                                      ^ Added space here
+            container('zap') {  // Need a ZAP container, not docker-tools
+              sh 'zap-baseline.py -t $DEV_URL || exit 0'
             }
-          }  // <-- Added missing closing brace
-        }  // <-- Added missing closing brace
-      }  // <-- Added missing closing brace for parallel
-    }  // <-- Added missing closing brace for stage
-  }  // <-- Closing stages
-}  // <-- Closing pipeline 
+          }
+        }
+      }
+    }
+  }
+}

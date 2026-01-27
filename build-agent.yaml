@@ -33,6 +33,11 @@ spec:
       command:
         - cat
       tty: true
+    - name: argocd
+      image: argoproj/argocd:v2.10.0
+      command:
+        - cat
+      tty: true
     - name: kaniko
       image: gcr.io/kaniko-project/executor:v1.6.0-debug
       imagePullPolicy: Always
@@ -51,6 +56,13 @@ spec:
       imagePullPolicy: Always
       command: 
         - cat
+      tty: true
+    - name: zap
+      image: owasp/zap2docker-stable:latest
+      command:
+        - sleep
+      args:
+        - infinity
       tty: true 
   volumes:
     - name: m2
