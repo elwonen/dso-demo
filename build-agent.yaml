@@ -2,83 +2,66 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    app: spring-build-ci
+    jenkins: agent
 spec:
   containers:
-    - name: maven
-      image: maven:3.9-eclipse-temurin-21-alpine
-      command:
-        - cat
-      tty: true
-      volumeMounts:
-        - name: m2
-          mountPath: /root/.m2/
-    - name: docker-tools
-      image: rmkanda/docker-tools:latest
-      command:
-        - cat
-      tty: true
-      volumeMounts:
-        - mountPath: /var/run
-          name: docker-sock
-        - mountPath: /tmp/trivycache/
-          name: trivycache
-    - name: trufflehog
-      image: rmkanda/trufflehog
-      command:
-        - cat
-      tty: true
-    - name: licensefinder
-      image: licensefinder/license_finder
-      command:
-        - cat
-      tty: true
-    - name: argocd
-      image: argoproj/argocd:v2.10.0
-      command:
-        - cat
-      tty: true
-    - name: kaniko
-      image: gcr.io/kaniko-project/executor:v1.6.0-debug
-      imagePullPolicy: Always
-      env:
-        - name: container
-          value: docker
-      command: 
-        - sleep
-      args:
-        - 99d
-      volumeMounts:
-        - name: jenkins-docker-cfg
-          mountPath: /kaniko/.docker
-    - name: slscan
-      image: shiftleft/sast-scan:v2.1.2
-      imagePullPolicy: Always
-      command: 
-        - cat
-      tty: true
-    - name: zap
-      image: owasp/zap2docker-stable:latest
-      command:
-        - sleep
-      args:
-        - infinity
-      tty: true 
+  - name: maven
+    image: maven:3.9-eclipse-temurin-17-alpine
+    command:
+      - cat
+    tty: true
+  
+  - name: licensefinder
+    image: licensefinder/license_finder:latest
+    command:
+      - cat
+    tty: true
+  
+  - name: slscan
+    image: shiftleft/scan:latest
+    command:
+      - cat
+    tty: true
+  
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:debug
+    command:
+      - /busybox/cat
+    tty: true
+    volumeMounts:
+      - name: docker-config
+        mountPath: /kaniko/.docker
+  
+  - name: docker-tools
+    image: aquasec/trivy:latest
+    command:
+      - cat
+    tty: true
+  
+  - name: trufflehog
+    image: trufflesecurity/trufflehog:latest
+    command:
+      - cat
+    tty: true
+  
+  - name: argocd
+    image: quay.io/argoproj/argocd:v2.10.0
+    command:
+      - cat
+    tty: true
+  
+  - name: zap
+    image: ghcr.io/zaproxy/zaproxy:stable
+    command:
+      - sleep
+    args:
+      - "99999"
+    tty: true
+  
   volumes:
-    - name: m2
-      hostPath:
-        path: /tmp/.m2/
-    - name: docker-sock
-      hostPath:
-        path: /var/run
-    - name: trivycache
-      hostPath:
-        path: /tmp/trivycache/
-    - name: jenkins-docker-cfg
-      projected: 
-        sources: 
-        - secret:
-            name: regcred
-            items: 
-              - key: .dockerconfigjson
-                path: config.json
+  - name: docker-config
+    secret:
+      secretName: docker-credentials
+      items:
+        - key: .dockerconfigjson
+          path: config.json

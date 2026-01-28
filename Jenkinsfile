@@ -1,6 +1,6 @@
 pipeline {
   environment {
-    ARGO_SERVER = 'argocd-server.argocd.svc.cluster.local:80'  // Fixed: added internal DNS
+    ARGO_SERVER = 'argocd-server.argocd.svc.cluster.local:80'
     DEV_URL = 'http://51.12.128.146:8080/'
   }
   agent {
@@ -132,12 +132,17 @@ pipeline {
         }
         stage('DAST') {
           steps {
-            container('zap') {  // Need a ZAP container, not docker-tools
-              sh 'zap-baseline.py -t $DEV_URL || exit 0'
+            container('zap') {
+              sh 'zap-baseline.py -t $DEV_URL -r zap-report.html || exit 0'
             }
           }
-        }
-      }
-    }
-  }
-}
+          post {
+            always {
+              archiveArtifacts allowEmptyArchive: true, artifacts: 'zap-report.html', fingerprint: true
+            }
+          }
+        }  // <-- Added: closes DAST stage
+      }  // <-- Added: closes parallel block
+    }  // <-- Added: closes Dynamic Analysis stage
+  }  // <-- closes stages
+}  // <-- closes pipeline
