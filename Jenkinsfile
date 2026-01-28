@@ -127,7 +127,7 @@ pipeline {
       parallel {
         stage('E2E tests') {
           steps {
-            sh 'echo "All Tests Passed!!!!!"'
+            sh 'echo "All Tests Passed!!!!"'
           }
         }
         stage('DAST') {
